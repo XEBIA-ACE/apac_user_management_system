@@ -18,7 +18,8 @@
     "test": "vitest run",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "loadtest:dashboard": "k6 run loadtest/dashboard.k6.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

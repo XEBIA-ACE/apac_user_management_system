@@ -14,7 +14,7 @@ export class GlobalExceptionHandler {
     const appError = this.toAppError(err);
     if (appError.statusCode >= 500 && appError.code !== 'NOT_IMPLEMENTED') {
       this.logger.error('Unhandled error', {
-        request_id: req.requestId,
+        correlationId: req.requestId,
         error: err instanceof Error ? err.message : String(err),
       });
     }

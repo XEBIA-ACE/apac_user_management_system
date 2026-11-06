@@ -15,7 +15,10 @@ export interface RouteDependencies {
 
 export const API_PREFIX = '/api/v1';
 
-/** Registers EP-API-001 … EP-API-007. Protected routes: Validation → Auth → handler (PAT-006). */
+/**
+ * Registers EP-API-001 … EP-API-007. Protected routes: Validation → Auth → handler (PAT-006),
+ * except GET /dashboard where AuthMiddleware is first in the chain (US-001 T001).
+ */
 export function createApiRouter(deps: RouteDependencies): Router {
   const { authController, userController, healthController, authMiddleware, validationMiddleware } =
     deps;
@@ -34,11 +37,11 @@ export function createApiRouter(deps: RouteDependencies): Router {
     authMiddleware.validate,
     authController.logout,
   );
-  // EP-API-005
+  // EP-API-005 — GET /api/v1/dashboard (US-001)
   router.get(
     '/dashboard',
-    validationMiddleware.validateAuthenticatedRequest,
     authMiddleware.validate,
+    validationMiddleware.validateAuthenticatedRequest,
     userController.getDashboard,
   );
   // EP-API-006

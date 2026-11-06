@@ -5,6 +5,8 @@ import { OtpFactory } from '../src/application/OtpFactory';
 import { OtpService } from '../src/application/OtpService';
 import { UserService } from '../src/application/UserService';
 import { createApp } from '../src/app';
+import { AccountStatus } from '../src/domain/AccountStatus';
+import { User } from '../src/domain/User';
 import { TokenBlacklist } from '../src/infrastructure/cache/TokenBlacklist';
 import { EmailDispatcher } from '../src/infrastructure/messaging/EmailDispatcher';
 import type { IOtpRepository } from '../src/infrastructure/repositories/IOtpRepository';
@@ -33,8 +35,37 @@ export const TEST_ENV = {
   SMTP_PASS: 'test-token',
 };
 
-export function signToken(claims: object = { userId: 'user-1', isVerified: true }): string {
-  return jwt.sign(claims, TEST_JWT.secret, { algorithm: 'HS256', expiresIn: 900 });
+export const DEFAULT_CLAIMS = { sub: 'user-1', email: 'user-1@example.com' };
+
+export function signToken(claims: object = DEFAULT_CLAIMS, expiresIn = 900): string {
+  return jwt.sign(claims, TEST_JWT.secret, { algorithm: 'HS256', expiresIn });
+}
+
+export const testUser = (id: string, status = AccountStatus.ACTIVE): User =>
+  new User(
+    id,
+    `Name ${id}`,
+    `${id}@example.com`,
+    'hashed',
+    status,
+    new Date('2026-01-02T03:04:05Z'),
+  );
+
+/** In-memory stand-in for the PostgreSQL users table (the session store). */
+export class FakeUserRepository {
+  readonly users = new Map<string, User>(
+    ['user-1', 'owner'].map((id) => [id, testUser(id)] as const),
+  );
+  failing = false;
+  delayMs = 0;
+  readonly findByIdCalls: string[] = [];
+
+  async findById(id: string): Promise<User | null> {
+    this.findByIdCalls.push(id);
+    if (this.delayMs) await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    if (this.failing) throw new Error('connect ECONNREFUSED 10.0.0.5:5432');
+    return this.users.get(id) ?? null;
+  }
 }
 
 export class FakeRedis {
@@ -53,11 +84,12 @@ export class FakeRedis {
   }
 }
 
-const userRepository = {} as IUserRepository;
 const otpRepository = {} as IOtpRepository;
 
 export function buildTestApp(options: { databaseUp?: boolean } = {}) {
   const redis = new FakeRedis();
+  const users = new FakeUserRepository();
+  const userRepository = users as unknown as IUserRepository;
   const tokenBlacklist = new TokenBlacklist(redis as never);
   const otpService = new OtpService(
     otpRepository,
@@ -66,17 +98,17 @@ export function buildTestApp(options: { databaseUp?: boolean } = {}) {
   );
   const userService = new UserService(userRepository, otpRepository, otpService, tokenBlacklist);
   const authService = new AuthService(userRepository, tokenBlacklist, TEST_JWT);
-  const logger = winston.createLogger({ silent: true });
+  const logger = winston.createLogger({ silent: true, level: 'debug' });
   const checkDatabase = async () => options.databaseUp ?? true;
 
   const app = createApp({
     authController: new AuthController(userService, authService),
     userController: new UserController(userService, authService),
     healthController: new HealthController(checkDatabase),
-    authMiddleware: new AuthMiddleware(authService, tokenBlacklist),
+    authMiddleware: new AuthMiddleware(authService, tokenBlacklist, logger),
     validationMiddleware: new ValidationMiddleware(),
     exceptionHandler: new GlobalExceptionHandler(logger),
   });
 
-  return { app, redis, tokenBlacklist, userService };
+  return { app, redis, users, tokenBlacklist, userService, authService, logger };
 }

@@ -1,7 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import { AppError } from '../../domain/AppError';
-import type { AccountStatus } from '../../domain/AccountStatus';
-import type { User } from '../../domain/User';
+import { AccountStatus } from '../../domain/AccountStatus';
+import { User } from '../../domain/User';
 import type { IUserRepository } from './IUserRepository';
 
 // All SQL/ORM logic for the users table lives here (PAT-003). Receives only already-hashed
@@ -13,8 +13,19 @@ export class PostgresUserRepository implements IUserRepository {
     throw AppError.notImplemented();
   }
 
-  async findById(_id: string): Promise<User | null> {
-    throw AppError.notImplemented();
+  async findById(id: string): Promise<User | null> {
+    const row = await this.db.user.findUnique({ where: { id } });
+    return row
+      ? new User(
+          row.id,
+          row.name,
+          row.email,
+          row.hashedPassword,
+          AccountStatus[row.status],
+          row.createdAt,
+          row.deletedAt,
+        )
+      : null;
   }
 
   async save(_user: User): Promise<User> {

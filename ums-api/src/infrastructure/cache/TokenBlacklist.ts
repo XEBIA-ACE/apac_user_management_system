@@ -4,8 +4,10 @@ import type Redis from 'ioredis';
 
 const KEY_PREFIX = 'ums:token-blacklist:';
 
-// TODO(stakeholder): token blacklist backend is unresolved — Redis (this default) vs. a PostgreSQL
-// sessions table (JWT STATELESS MODEL vs. SESSION STORE gap, COMP-003 vs. US-016/US-017).
+// Backing store: Redis (US-001 T011 decision). Redis is already a declared dependency of this
+// service (REDIS_URL, Bull queue), so no new external dependency is introduced; an in-process
+// store was rejected because revocations would not be shared across API instances or survive
+// restarts. Redis unavailability fails closed (HTTP 401) in AuthMiddleware.
 // TODO(stakeholder): session timeout and concurrent session limits are unresolved.
 export class TokenBlacklist {
   constructor(private readonly redis: Pick<Redis, 'set' | 'exists'>) {}
