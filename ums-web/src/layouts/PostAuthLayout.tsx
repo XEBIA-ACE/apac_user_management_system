@@ -51,6 +51,16 @@ export function PostAuthLayout() {
                 <ul id={accountMenuId} className="ums-nav-menu">
                   <li>
                     <Link
+                      to={ROUTES.profile}
+                      className="ums-nav-link"
+                      onClick={() => setAccountOpen(false)}
+                    >
+                      <User aria-hidden="true" size={18} />
+                      <span>Profile</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
                       to={ROUTES.deleteAccount}
                       className="ums-nav-link"
                       onClick={() => setAccountOpen(false)}

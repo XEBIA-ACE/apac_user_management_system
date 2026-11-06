@@ -11,6 +11,7 @@ import {
   OtpVerificationScreen,
   OtpVerificationSuccessScreen,
   PostDeletionConfirmationScreen,
+  ProfileScreen,
   RegistrationScreen,
   SessionReauthScreen,
 } from '../screens';
@@ -31,7 +32,8 @@ export function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route element={<PostAuthLayout />}>
           <Route path={ROUTES.dashboard} element={<DashboardScreen />} />
-          <Route path={ROUTES.deleteAccount} element={<AccountDeletionConfirmationScreen />} />
+          <Route path={ROUTES.profile} element={<ProfileScreen />} />
+          <Route path={ROUTES.deleteAccount}element={<AccountDeletionConfirmationScreen />} />
           <Route path={ROUTES.deleteAccountError} element={<DeletionRollbackErrorScreen />} />
         </Route>
       </Route>
