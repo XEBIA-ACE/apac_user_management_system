@@ -49,7 +49,13 @@ export interface UserDTO {
   name: string;
   email: string;
   is_verified: boolean;
+  account_status: string;
   created_at: string;
+}
+
+/** HTTP 200 body of GET /api/v1/users/me (US-005): the four read-only profile fields. */
+export interface ProfileResponse {
+  user: UserDTO;
 }
 
 /** HTTP 200 body of GET /api/v1/dashboard; delete_account_visible is always true (US-001-ac-5). */

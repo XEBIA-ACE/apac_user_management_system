@@ -52,6 +52,7 @@ export class UserService {
       name: user.name,
       email: user.email,
       is_verified: user.status === AccountStatus.ACTIVE,
+      account_status: user.status,
       created_at: user.createdAt.toISOString(),
     };
   }
