@@ -10,4 +10,5 @@ export const ROUTES = {
   otpRecovery: '/verify-otp/recover', // SCR-008
   deleteAccountError: '/dashboard/delete/error', // SCR-009
   sessionReauth: '/session/reauth', // SCR-010
+  profile: '/profile', // US-017
 } as const;

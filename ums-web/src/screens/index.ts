@@ -8,3 +8,4 @@ export { PostDeletionConfirmationScreen } from './PostDeletionConfirmationScreen
 export { OtpRecoveryHubScreen } from './OtpRecoveryHubScreen';
 export { DeletionRollbackErrorScreen } from './DeletionRollbackErrorScreen';
 export { SessionReauthScreen } from './SessionReauthScreen';
+export { ProfileScreen } from './ProfileScreen';
