@@ -1,10 +1,13 @@
 import bcrypt from 'bcryptjs';
+import { AccountStatus } from '../domain/AccountStatus';
 import { AppError } from '../domain/AppError';
-import type { RegisterRequest, UserResponse, VerifyOtpRequest } from '../domain/dtos';
+import type { RegisterRequest, UserDTO, UserResponse, VerifyOtpRequest } from '../domain/dtos';
 import type { TokenBlacklist } from '../infrastructure/cache/TokenBlacklist';
 import type { IOtpRepository } from '../infrastructure/repositories/IOtpRepository';
 import type { IUserRepository } from '../infrastructure/repositories/IUserRepository';
 import type { OtpService } from './OtpService';
+import { SESSION_STORE_QUERY_TIMEOUT_MS } from './AuthService';
+import { withTimeout } from './withTimeout';
 
 // TODO(stakeholder): exact bcrypt work factor is unresolved (>= 12 required; benchmark on target
 // hardware).
@@ -29,6 +32,28 @@ export class UserService {
   /** Delegates to OtpService.verify() and transitions the user PENDING → ACTIVE. */
   async verifyOtp(_dto: VerifyOtpRequest): Promise<void> {
     throw AppError.notImplemented();
+  }
+
+  /**
+   * Returns the UserDTO for the authenticated user. userId must come only from JwtPayload.sub set
+   * by AuthMiddleware (US-001-ac-6). A missing or deleted account is treated as an invalid session.
+   */
+  async getDashboardUser(userId: string): Promise<UserDTO> {
+    const user = await withTimeout(
+      this.userRepository.findById(userId),
+      SESSION_STORE_QUERY_TIMEOUT_MS,
+      'User lookup',
+    );
+    if (!user || user.status === AccountStatus.DELETED) {
+      throw AppError.unauthorized();
+    }
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      is_verified: user.status === AccountStatus.ACTIVE,
+      created_at: user.createdAt.toISOString(),
+    };
   }
 
   /**

@@ -61,7 +61,7 @@ describe('C4 classes (T005)', () => {
   it('expose the repository interfaces and minimal JwtPayload claims', () => {
     const userRepo: IUserRepository = new PgUserRepoModule.PostgresUserRepository({} as never);
     const otpRepo: IOtpRepository = new PgOtpRepoModule.PostgresOtpRepository({} as never);
-    const payload: JwtPayload = { userId: 'u', isVerified: true, iat: 1, exp: 2 };
+    const payload: JwtPayload = { sub: 'u', email: 'u@example.com', iat: 1, exp: 2 };
     expect(userRepo).toBeDefined();
     expect(otpRepo).toBeDefined();
     expect(Object.keys(payload)).toEqual([...domain.JWT_PAYLOAD_CLAIMS]);

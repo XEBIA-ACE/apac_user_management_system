@@ -8,6 +8,7 @@ export {
   AuthResponse,
   UserResponse,
 } from './dtos';
+export type { DashboardResponse, ErrorResponse, UserDTO } from './dtos';
 export { JWT_PAYLOAD_CLAIMS } from './JwtPayload';
 export type { JwtPayload } from './JwtPayload';
 export { AppError } from './AppError';

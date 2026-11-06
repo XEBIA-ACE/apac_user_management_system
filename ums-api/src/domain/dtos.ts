@@ -42,3 +42,25 @@ export class UserResponse {
     public status: string,
   ) {}
 }
+
+/** User identity fields returned in DashboardResponse (US-001). Never carries hashedPassword. */
+export interface UserDTO {
+  id: string;
+  name: string;
+  email: string;
+  is_verified: boolean;
+  created_at: string;
+}
+
+/** HTTP 200 body of GET /api/v1/dashboard; delete_account_visible is always true (US-001-ac-5). */
+export interface DashboardResponse {
+  user: UserDTO;
+  features: { delete_account_visible: boolean };
+}
+
+/** Error body; `code` is 'UNAUTHORIZED' for every auth failure. Sent wrapped as `{ error }`. */
+export interface ErrorResponse {
+  code: string;
+  message: string;
+  correlationId: string;
+}

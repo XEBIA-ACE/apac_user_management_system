@@ -48,7 +48,7 @@ export function buildContainer(config: AppConfig, logger: Logger): Container {
     authController: new AuthController(userService, authService),
     userController: new UserController(userService, authService),
     healthController: new HealthController(createDatabaseHealthCheck(prisma)),
-    authMiddleware: new AuthMiddleware(authService, tokenBlacklist),
+    authMiddleware: new AuthMiddleware(authService, tokenBlacklist, logger),
     validationMiddleware: new ValidationMiddleware(),
     exceptionHandler: new GlobalExceptionHandler(logger),
   };

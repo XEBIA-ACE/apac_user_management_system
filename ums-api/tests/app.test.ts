@@ -26,7 +26,7 @@ describe('GET /api/v1/health (EP-API-007)', () => {
 
 const expectEnvelope = (body: unknown, code: string) => {
   expect(body).toEqual({
-    error: { code, message: expect.any(String), request_id: expect.any(String) },
+    error: { code, message: expect.any(String), correlationId: expect.any(String) },
   });
 };
 
@@ -40,7 +40,7 @@ describe('public placeholder routes', () => {
     const res = await request(app).post(path).send(body);
     expect(res.status).toBe(501);
     expectEnvelope(res.body, 'NOT_IMPLEMENTED');
-    expect(res.headers['x-request-id']).toBe(res.body.error.request_id);
+    expect(res.headers['x-request-id']).toBe(res.body.error.correlationId);
   });
 });
 
@@ -82,23 +82,37 @@ describe('protected placeholder routes (AuthMiddleware)', () => {
     },
   );
 
-  it.each(protectedRoutes)('%s %s returns 501 for a valid token', async (method, path) => {
+  it.each([
+    ['post', '/api/v1/auth/logout', 200],
+    ['get', '/api/v1/dashboard', 200],
+    ['delete', '/api/v1/users/me', 501],
+  ] as const)('%s %s passes AuthMiddleware for a valid token', async (method, path, status) => {
     const { app } = buildTestApp();
     const res = await request(app)[method](path).set('Authorization', `Bearer ${signToken()}`);
-    expect(res.status).toBe(501);
-    expectEnvelope(res.body, 'NOT_IMPLEMENTED');
+    expect(res.status).toBe(status);
   });
+
+  it.each(protectedRoutes)(
+    '%s %s fails closed (401) when the PostgreSQL session store is down',
+    async (method, path) => {
+      const { app, users } = buildTestApp();
+      users.failing = true;
+      const res = await request(app)[method](path).set('Authorization', `Bearer ${signToken()}`);
+      expect(res.status).toBe(401);
+      expectEnvelope(res.body, 'UNAUTHORIZED');
+    },
+  );
 
   it('rejects a token carrying unexpected claim types', async () => {
     const { app } = buildTestApp();
-    const token = signToken({ userId: 42, isVerified: 'yes' });
+    const token = signToken({ sub: 42, email: true });
     const res = await request(app).get('/api/v1/dashboard').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(401);
   });
 });
 
 describe('DELETE /api/v1/users/me ownership (US-004)', () => {
-  it('passes only req.user.userId from the JWT to UserService.deleteAccount', async () => {
+  it('passes only req.user.sub from the JWT to UserService.deleteAccount', async () => {
     const { app, userService } = buildTestApp();
     const calls: unknown[][] = [];
     userService.deleteAccount = async (...args: unknown[]) => {
@@ -106,10 +120,23 @@ describe('DELETE /api/v1/users/me ownership (US-004)', () => {
     };
     const res = await request(app)
       .delete('/api/v1/users/me?userId=attacker')
-      .set('Authorization', `Bearer ${signToken({ userId: 'owner', isVerified: true })}`)
+      .set('Authorization', `Bearer ${signToken({ sub: 'owner', email: 'owner@example.com' })}`)
       .send({ userId: 'attacker' });
     expect(res.status).toBe(200);
     expect(calls).toEqual([['owner']]);
+  });
+});
+
+describe('POST /api/v1/auth/logout', () => {
+  it('blacklists the presented token so it can no longer be used', async () => {
+    const { app } = buildTestApp();
+    const auth = `Bearer ${signToken()}`;
+    expect((await request(app).post('/api/v1/auth/logout').set('Authorization', auth)).status).toBe(
+      200,
+    );
+    expect((await request(app).get('/api/v1/dashboard').set('Authorization', auth)).status).toBe(
+      401,
+    );
   });
 });
 

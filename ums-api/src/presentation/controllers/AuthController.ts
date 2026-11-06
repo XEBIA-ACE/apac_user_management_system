@@ -34,7 +34,7 @@ export class AuthController {
     if (!req.user || !req.token) {
       throw AppError.unauthorized();
     }
-    await this.authService.logout(req.user.userId, req.token);
+    await this.authService.logout(req.user.sub, req.token);
     res.status(200).json({ message: 'Logged out.' });
   };
 }

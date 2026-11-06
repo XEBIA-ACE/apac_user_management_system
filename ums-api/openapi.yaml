@@ -3,9 +3,9 @@ info:
   title: User Management System API (SVC-001)
   version: 1.0.0
   description: >
-    Scaffold contract. Only GET /api/v1/health is implemented; every other operation currently
-    returns 501 NOT_IMPLEMENTED (protected operations return 401 until a valid bearer token is
-    supplied).
+    GET /api/v1/health, GET /api/v1/dashboard and POST /api/v1/auth/logout are implemented; every
+    other operation currently returns 501 NOT_IMPLEMENTED (protected operations return 401 until a
+    valid bearer token is supplied).
 servers:
   - url: /api/v1
 components:
@@ -21,11 +21,33 @@ components:
       properties:
         error:
           type: object
-          required: [code, message, request_id]
+          required: [code, message, correlationId]
           properties:
             code: { type: string, example: UNAUTHORIZED }
             message: { type: string }
-            request_id: { type: string }
+            correlationId: { type: string, description: Same value as the X-Request-Id header }
+    UserDTO:
+      type: object
+      required: [id, name, email, is_verified, created_at]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        is_verified: { type: boolean }
+        created_at: { type: string, format: date-time }
+    DashboardResponse:
+      type: object
+      required: [user, features]
+      properties:
+        user: { $ref: '#/components/schemas/UserDTO' }
+        features:
+          type: object
+          required: [delete_account_visible]
+          properties:
+            delete_account_visible:
+              type: boolean
+              enum: [true]
+              description: Always true on HTTP 200; signals the client to render Delete Account.
     HealthResponse:
       type: object
       required: [status, timestamp, dependencies]
@@ -105,19 +127,31 @@ paths:
   /auth/logout:
     post:
       operationId: EP-API-004
-      summary: Revoke the current session token
+      summary: Revoke the current session token (adds it to the TokenBlacklist)
       security: [{ bearerAuth: [] }]
       responses:
+        '200': { description: Token revoked }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '501': { $ref: '#/components/responses/NotImplemented' }
   /dashboard:
     get:
       operationId: EP-API-005
-      summary: Authenticated user's dashboard profile
+      summary: Authenticated user's dashboard profile and Delete Account visibility flag (US-001)
+      description: >
+        Identity is taken only from the validated JWT (`sub`). Returns 401 UNAUTHORIZED for a
+        missing/non-Bearer, expired, tampered or blacklisted token, a deleted/unknown account, or
+        when the token blacklist (Redis) or PostgreSQL session store is unavailable (fail-secure).
       security: [{ bearerAuth: [] }]
       responses:
+        '200':
+          description: Valid session
+          headers:
+            Server-Timing:
+              description: AuthMiddleware session-validation duration, e.g. `auth;dur=1.23`
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DashboardResponse' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '501': { $ref: '#/components/responses/NotImplemented' }
   /users/me:
     delete:
       operationId: EP-API-006
