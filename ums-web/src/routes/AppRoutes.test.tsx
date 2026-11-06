@@ -1,9 +1,14 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { SessionProvider } from '../auth/SessionContext';
 import { AppRoutes } from './AppRoutes';
 import { ROUTES } from './paths';
+
+vi.mock('../api/endpoints', () => ({
+  umsApi: { getDashboard: vi.fn().mockResolvedValue({ status: 200, data: {} }) },
+}));
 
 function renderAt(path: string, authenticated = false) {
   return render(
