@@ -2,145 +2,130 @@
 
 ## Technical Context
 
-> ⚠️ **Degraded design notice**: `spec_technical_design` is marked `degraded=true`. The generated_context artifacts for SVC-002 (`artifact-SVC-002-c3`, `artifact-SVC-002-c4`, `artifact-SVC-002-api_spec`) were regenerated but returned empty content. No provider-confirmed C4 diagrams or detailed API spec content was available. All component and API surface decisions are grounded in `spec_service_identification.services[SVC-002]` and the functional specification, not in regenerated architecture artifacts. Review and reconcile once those artifacts are populated.
+> ⚠️ **Degraded Mode Disclosure**: This design is marked degraded. No provider-scanned architecture context or `accepted_impact_hash` is present. All component and API surface references are grounded exclusively in the regenerated C3 (`artifact-SVC-001-c3`) and C4 (`artifact-SVC-001-c4`) artifacts produced by the Architecture Agent during gap resolution. A live repository scan has not been performed; implementation conformance cannot be verified from static artifacts alone.
 
-### Unresolved Evidence References
+**Evidence references (unresolved — must be resolved before implementation):**
+- `service:SVC-001` — unresolved reference
+- `artifact-SVC-001-c3` — unresolved reference (C3 component diagram for SVC-001)
+- `artifact-SVC-001-c4` — unresolved reference (C4 code-level diagram for SVC-001)
 
-The following references were cited in the specification but could not be resolved against provider-scanned artifacts at export time:
-
-- `service:SVC-002`
-- `artifact-SVC-002-c3`
-- `artifact-SVC-002-c4`
-- `artifact-SVC-002-api_spec`
-- `spec_functional:US-001`
-- `FR-001:US-001-ac-1`
-- `FR-002:US-001-ac-2`
-- `FR-003:US-001-ac-3`
-- `FR-004:US-001-ac-4`
-- `FR-005:US-001-ac-5`
-- `FR-006:US-001-ac-6`
-- `FR-007:US-001-ac-7`
-- `FR-008:US-001-ac-8`
-- `spec_service_identification:SVC-002`
-- `spec_gap_resolution:artifact-SVC-002-c3:auto_generate`
-- `spec_gap_resolution:artifact-SVC-002-c4:auto_generate`
-- `spec_gap_resolution:artifact-SVC-002-api_spec:auto_generate`
-
-### Open Implementation-Readiness Items
-
-The following items must be resolved or explicitly accepted before implementation is considered ready:
-
-1. **Empty generated_context artifacts**: The generated_context artifacts for SVC-002 (`artifact-SVC-002-c3`, `artifact-SVC-002-c4`, `artifact-SVC-002-api_spec`) were regenerated but returned empty content. No provider-confirmed C4 diagrams or detailed API spec content was available. All component and API surface decisions are grounded in `spec_service_identification.services[SVC-002]` and the functional specification, not in regenerated architecture artifacts. Review and reconcile once `artifact-SVC-002-c3`, `artifact-SVC-002-c4`, and `artifact-SVC-002-api_spec` are populated.
-2. **Degraded technical design**: `spec_technical_design` is marked `degraded=true` due to empty generated_context artifacts; contract decisions derived from this design carry elevated uncertainty until the artifacts are confirmed by a provider scan.
-3. **TokenBlacklist backing store unresolved**: The design states 'in-process store or Redis' but does not commit to one. If Redis is chosen, it introduces a new external dependency and a separate availability/contract surface that is not yet captured.
-4. **JWT clock-skew tolerance unconfirmed**: The exact clock-skew tolerance for JWT exp-claim validation is stated as '≤ 0' in the design steps but is not confirmed in any provider-scanned artifact; this could affect interoperability with clients that have minor clock drift.
-5. **PostgreSQL session store query timeout unspecified**: The fail-secure path (HTTP 401 on timeout) depends on a concrete timeout threshold that has not been defined or validated.
-6. **1-second SLA unverified**: The 1-second SLA under ~500 concurrent users (US-001-ac-7) has no load-test baseline or benchmark evidence from the current environment; the SLA is an acceptance criterion but has not been verified against the chosen infrastructure.
-7. **DELETE /api/account contract out of scope**: DELETE /api/account is listed as a protected endpoint that also populates the TokenBlacklist, but its contract details (request/response schema, cascade-delete behaviour) are out of scope for US-001 and remain unspecified in this story's grounding.
-8. **Rate-limiting policy undefined for dashboard endpoint**: No explicit rate-limiting policy is defined for GET /api/v1/dashboard; the design mentions rate limiting on auth endpoints but does not confirm whether the dashboard endpoint is included.
-9. **API contract registry not populated**: The `architecture_context.api_contracts` field was not populated in the input payload; contract grounding is therefore derived solely from `spec_technical_design` and the functional specification rather than a provider-confirmed API contract registry.
+**Architecture references grounded in:**
+- `artifact-SVC-001-c3`: C3 component diagram for SVC-001 (User Management System API) — defines COMP-001 through COMP-013 and EXT-001 through EXT-004
+- `artifact-SVC-001-c4`: C4 code-level diagram for SVC-001 — defines AuthController, UserController, AuthMiddleware, ValidationMiddleware, GlobalExceptionHandler, UserService, AuthService, OtpService, OtpFactory, IUserRepository, IOtpRepository, PostgresUserRepository, PostgresOtpRepository, EmailDispatcher, TokenBlacklist and their code relationships
 
 ---
 
-## Service: SVC-002 — User Management API Backend
+## Implementation-Readiness Items (Must Be Resolved or Explicitly Accepted)
 
-**Technologies**: Node.js with TypeScript (or Python with FastAPI), Express.js (or FastAPI), jsonwebtoken / PyJWT, bcryptjs / passlib[bcrypt], Zod / Joi (Node.js) or Pydantic (Python), Prisma / TypeORM (Node.js) or SQLAlchemy (Python), Winston (Node.js) or structlog (Python), Helmet.js, express-rate-limit or SlowApi, Docker + Docker Compose, dotenv.
+1. **Canonical path ambiguity — GET /api/dashboard vs GET /api/users/me/dashboard**: The design references both as aliases for the same endpoint (UserController). The canonical path must be confirmed and locked in the API contract before implementation to avoid routing ambiguity in the Express router and in ums-web's API client.
 
-### Design Steps
+2. **Canonical path ambiguity — DELETE /api/users/me vs DELETE /api/account**: The design references both as aliases. The canonical path must be confirmed; the alias must be documented as a redirect or removed to prevent dual-route maintenance burden.
 
-**Step 1** [SVC-002 — Route]: Confirm GET /api/v1/dashboard is registered on the Express/FastAPI router in SVC-002 with AuthMiddleware applied as the first middleware in the chain, before UserController.getDashboard() is invoked. Verify the route path matches the acceptance criteria exactly (/api/v1/dashboard, not /api/dashboard). [evidence: service:SVC-002, artifact-SVC-002-c3, artifact-SVC-002-api_spec]
+3. **DashboardResponseDTO visibility flag**: DashboardResponseDTO does not include an explicit boolean flag (e.g., `canDeleteAccount`) to signal 'Delete Account' entry point visibility — ums-web currently derives visibility from a successful 200 response alone. If future business rules require finer-grained control (e.g., account type restrictions), the DTO shape will need to be extended. This assumption should be validated with the product owner.
 
-**Step 2** [SVC-002 — AuthMiddleware: token presence check]: Implement the missing-token guard in AuthMiddleware for GET /api/v1/dashboard. If the Authorization header is absent or does not carry a Bearer token, AuthMiddleware must immediately return HTTP 401 with ErrorResponse { code: 'UNAUTHORIZED', message: '...', correlationId: '<uuid>' } and must not invoke UserController.getDashboard(). [evidence: service:SVC-002, FR-002, US-001-ac-2]
+4. **JWT transport mechanism**: The JWT transport mechanism (HttpOnly cookie vs. Authorization Bearer header) is listed as both options in the design. The ums-web client must align with whichever mechanism SVC-001 implements; this choice must be finalised before frontend integration to avoid CORS and CSRF policy mismatches.
 
-**Step 3** [SVC-002 — AuthMiddleware: expiry check]: Implement JWT exp-claim validation in AuthMiddleware. After extracting the Bearer token, decode and inspect the exp claim; if the current time is at or past exp, return HTTP 401 ErrorResponse { code: 'UNAUTHORIZED' } without invoking the controller. Use jsonwebtoken.verify() / PyJWT.decode() with clock-skew tolerance ≤ 0. [evidence: service:SVC-002, FR-003, US-001-ac-3]
+5. **Degraded design — no live repository scan**: The design is marked degraded: no provider-scanned architecture context or `accepted_impact_hash` is present. All component and API surface references are grounded exclusively in the regenerated C3 (`artifact-SVC-001-c3`) and C4 (`artifact-SVC-001-c4`) artifacts. A live repository scan has not been performed; implementation conformance cannot be verified from static artifacts alone.
 
-**Step 4** [SVC-002 — TokenBlacklist.isBlacklisted()]: Implement or wire the TokenBlacklist component within SVC-002. AuthMiddleware must call TokenBlacklist.isBlacklisted(token) after expiry validation; if the token is found in the blacklist, return HTTP 401 ErrorResponse { code: 'UNAUTHORIZED' } without invoking the controller. The blacklist must be populated on POST /api/auth/logout and on DELETE /api/account completion. [evidence: service:SVC-002, FR-004, US-001-ac-4]
+6. **Frontend scope boundary (EXT-004 / ums-web)**: The ums-web frontend module (EXT-004) implementation details — ums-design-system component usage, Dashboard UI wireframe conformance, ARIA accessibility attributes (US-001-ac-5) — are outside the scope of SVC-001 and must be addressed in a separate frontend-scoped design. No frontend contract has been grounded here.
 
-**Step 5** [SVC-002 — AuthMiddleware: PostgreSQL session store fail-secure]: Implement the fail-secure path in AuthMiddleware for PostgreSQL session store unavailability. If the session store query throws or times out during JWT validation, AuthMiddleware must catch the error and return HTTP 401 ErrorResponse { code: 'UNAUTHORIZED' } rather than granting access. Log the store outage with a correlation ID. [evidence: service:SVC-002, FR-008, US-001-ac-8]
+7. **TokenBlacklist storage backend**: TokenBlacklist storage backend is listed as 'Redis or PostgreSQL sessions table' — the concrete choice affects latency of `isBlacklisted()` checks on every GET /api/dashboard request and must be decided before infrastructure provisioning.
 
-**Step 6** [SVC-002 — AuthMiddleware: JwtPayload attachment]: On successful validation (token present, not expired, not blacklisted, session store available), AuthMiddleware must decode the JWT and attach the JwtPayload { sub, email, iat, exp } to req.user before calling next(), making it available to UserController.getDashboard(). [evidence: service:SVC-002, FR-006, US-001-ac-6]
+8. **Rate-limiting policy for GET /api/dashboard**: Rate-limiting rules on COMP-012 (Nginx) are confirmed absent for normal authenticated dashboard access, but no explicit rate-limit policy for GET /api/dashboard has been specified. If abuse vectors exist (e.g., credential-stuffing via repeated dashboard polling), a rate-limit policy should be defined.
 
-**Step 7** [SVC-002 — UserController.getDashboard()]: Implement UserController.getDashboard() to read user identity exclusively from req.user (JwtPayload set by AuthMiddleware). It must never read user identity from query parameters or request body. Fetch UserDTO fields (id, name, email, is_verified, created_at) for the user identified by JwtPayload.sub. Return HTTP 200 with DashboardResponse { user: UserDTO, features: { delete_account_visible: true } }. [evidence: service:SVC-002, FR-001, FR-005, FR-006, US-001-ac-1, US-001-ac-5, US-001-ac-6]
+---
 
-**Step 8** [SVC-002 — DashboardResponse schema]: Define and enforce the DashboardResponse schema: { user: UserDTO, features: { delete_account_visible: boolean } }. Validate with Zod/Joi (Node.js) or Pydantic (Python) at the controller output boundary. Ensure delete_account_visible is always set to boolean true in every HTTP 200 response from GET /api/v1/dashboard. [evidence: service:SVC-002, FR-005, US-001-ac-5]
+## Design Steps
 
-**Step 9** [SVC-002 — ErrorResponse schema]: Define and enforce the ErrorResponse schema for HTTP 401 responses: { code: string, message: string, correlationId: string }. The code field must equal 'UNAUTHORIZED' for all auth failures on GET /api/v1/dashboard. Wire this into the centralized error handler so all AuthMiddleware rejections produce a consistent response body. [evidence: service:SVC-002, FR-002, US-001-ac-2]
+**STEP 1** [SVC-001 / UserController — artifact-SVC-001-c4]: Confirm that UserController handles GET /api/users/me/dashboard (aliased as GET /api/dashboard per service identification) and that the route is registered behind AuthMiddleware in the Express router. The controller must derive the user context exclusively from `req.user.userId` (JWT payload injected by AuthMiddleware) and never from client-supplied path, query, or body parameters. [US-001 / FR-001, FR-002; evidence: artifact-SVC-001-c4, service:SVC-001]
 
-**Step 10** [SVC-002 — Performance: 1-second SLA]: Instrument the AuthMiddleware validation path for GET /api/v1/dashboard with timing metrics. Ensure the full session-validation path (token decode + blacklist check + session store query) completes within 1 second end-to-end under ~500 concurrent users. Apply connection pooling on the PostgreSQL session store client and set appropriate query timeouts. Add a load test gate (e.g., k6 or Artillery) targeting 500 VUs on GET /api/v1/dashboard to validate the SLA before merge. [evidence: service:SVC-002, FR-007, US-001-ac-7]
+**STEP 2** [SVC-001 / AuthMiddleware — artifact-SVC-001-c4, COMP-007]: Verify that AuthMiddleware is applied to GET /api/dashboard as a protected route. AuthMiddleware must: (a) extract the Bearer token from the Authorization header or HttpOnly cookie, (b) call `AuthService.validateToken()` for JWT signature and expiry validation, (c) call `TokenBlacklist.isBlacklisted()` for revocation check, (d) attach the decoded JwtPayload to `req.user` on success, and (e) return HTTP 401 immediately on any failure — missing token, expired token, or blacklisted token. The 401 response is the signal that suppresses the 'Delete Account' entry point on the ums-web client. [US-001 / FR-002, FR-003, FR-004; evidence: artifact-SVC-001-c4, artifact-SVC-001-c3]
 
-**Step 11** [SVC-002 — Degraded notice — generated_context gaps]: The generated_context artifacts for SVC-002 (artifact-SVC-002-c3, artifact-SVC-002-c4, artifact-SVC-002-api_spec) were regenerated but returned empty content. No provider-confirmed C4 diagrams or detailed API spec content was available. This design is therefore marked degraded: all component and API surface decisions above are grounded in spec_service_identification.services[SVC-002] and the functional specification (spec_functional), not in regenerated architecture artifacts. Review and reconcile once artifact-SVC-002-c3, artifact-SVC-002-c4, and artifact-SVC-002-api_spec are populated. [evidence: artifact-SVC-002-c3, artifact-SVC-002-c4, artifact-SVC-002-api_spec]
+**STEP 3** [SVC-001 / UserService + UserController — artifact-SVC-001-c4, COMP-002]: Confirm that `UserService.getDashboardData(userId)` retrieves the authenticated user's profile from IUserRepository and constructs a `DashboardResponseDTO: { userId, name, email, isVerified, createdAt }`. UserController maps the result to HTTP 200 OK with the DashboardResponseDTO payload. A successful 200 response is the affirmative signal to ums-web to render the 'Delete Account' entry point. [US-001 / FR-001, FR-002; evidence: artifact-SVC-001-c4, artifact-SVC-001-c3]
+
+**STEP 4** [SVC-001 / GlobalExceptionHandler — artifact-SVC-001-c4]: Confirm that GlobalExceptionHandler maps authentication failures (AppError with 401 status) to a standardised ErrorResponseDTO response with HTTP 401. This ensures that expired-session detection (FR-004) and unauthenticated-access detection (FR-003) both produce a consistent 401 that the ums-web module can reliably detect to trigger the /login redirect and suppress the 'Delete Account' entry point. No stack traces, PII, or credential data must appear in the 401 response body. [US-001 / FR-003, FR-004; evidence: artifact-SVC-001-c4]
+
+**STEP 5** [SVC-001 / UserController + DELETE /api/account — artifact-SVC-001-c4, service:SVC-001]: Confirm that DELETE /api/users/me (registered as DELETE /api/account in the service's API surface) is protected by AuthMiddleware and that `UserController.deleteAccount()` passes only `req.user.userId` to `UserService.deleteAccount()`. This satisfies FR-006: the 'Delete Account' entry point on /dashboard is wired to initiate this flow, and the endpoint is both visible and actionable for authenticated users. The actual execution of the deletion, ownership verification, and confirmation step remain out of scope for US-001 but the endpoint contract must be confirmed present. [US-001 / FR-006; evidence: artifact-SVC-001-c4, service:SVC-001]
+
+**STEP 6** [SVC-001 / COMP-012 Reverse Proxy / TLS Gateway — artifact-SVC-001-c3]: Confirm that Nginx routes GET /api/dashboard and DELETE /api/account (DELETE /api/users/me) through to the REST API Controller Layer (COMP-001) over HTTPS. No rate-limiting rules should block normal authenticated dashboard access. TLS termination ensures all session tokens (JWT in HttpOnly cookie or Authorization header) are transmitted exclusively over encrypted channels. [US-001 / FR-001 through FR-006; evidence: artifact-SVC-001-c3]
+
+**STEP 7** [SVC-001 / EXT-004 Frontend Web Client (ums-web) — artifact-SVC-001-c3]: Document the ums-web client-side contract that this backend design supports. The ums-web /dashboard route must: (a) issue GET /api/dashboard on route load, (b) render the 'Delete Account' entry point (using ums-design-system components, conforming to the approved Dashboard UI wireframe with correct placement, labeling, and ARIA accessibility attributes) if and only if the response is HTTP 200 OK, (c) redirect to /login and suppress the entry point if the response is HTTP 401 (covers both unauthenticated and expired-session cases), and (d) wire the 'Delete Account' entry point to initiate the DELETE /api/users/me flow. NOTE: ums-web UI implementation (FR-005 design-system compliance, wireframe conformance, ARIA attributes) is a frontend concern not directly implemented in SVC-001; this step records the API contract boundary. [US-001 / FR-001, FR-002, FR-003, FR-004, FR-005, FR-006; evidence: artifact-SVC-001-c3, service:SVC-001]
+
+**STEP 8** [SVC-001 / TokenBlacklist — artifact-SVC-001-c4]: Confirm that `TokenBlacklist.isBlacklisted()` is invoked by AuthMiddleware on every request to GET /api/dashboard. This ensures that tokens revoked via logout (POST /api/auth/logout) or account deletion (DELETE /api/account) are immediately rejected, preventing a revoked-token holder from accessing the dashboard and seeing the 'Delete Account' entry point after session invalidation. [US-001 / FR-003, FR-004; evidence: artifact-SVC-001-c4]
+
+**STEP 9** [SVC-001 / Degraded-mode disclosure]: This design is marked degraded because the greenfield run does not carry a provider-scanned architecture context (no `accepted_impact_hash`, no live repository scan). All component and API surface references are grounded in the regenerated C3 (`artifact-SVC-001-c3`) and C4 (`artifact-SVC-001-c4`) artifacts produced by the Architecture Agent during gap resolution. No unresolved_blocking gaps exist for SVC-001. The ums-web frontend module (EXT-004) is referenced as an external client boundary; its internal implementation (ums-design-system usage, wireframe conformance per FR-005) is outside the scope of SVC-001 and must be addressed in a separate frontend-scoped design. [evidence: artifact-SVC-001-c3, artifact-SVC-001-c4, service:SVC-001]
 
 ---
 
 ## Contract Changes Required
 
-**contract_change_required**: true  
-**Impacted services**: SVC-002
+| Endpoint | Service | Change Type | Notes |
+|----------|---------|-------------|-------|
+| GET /api/dashboard | SVC-001 | New (greenfield) | Net-new endpoint; protected by AuthMiddleware; returns DashboardResponseDTO on 200, ErrorResponseDTO on 401 |
+| DELETE /api/users/me (alias: DELETE /api/account) | SVC-001 | New (greenfield) | Net-new endpoint; protected by AuthMiddleware; account deletion flow |
+| POST /api/auth/login | SVC-001 | No change required | Pre-existing; indirectly implicated as /login redirect target |
 
-### Reasons
-
-1. Greenfield API impact identified: GET /api/v1/dashboard is a new endpoint on SVC-002 with a defined DashboardResponse contract ({ user: UserDTO, features: { delete_account_visible: boolean } }) that does not exist in any prior accepted contract baseline, requiring a new API contract to be established.
-2. New HTTP 401 ErrorResponse contract ({ code: string, message: string, correlationId: string }) is introduced for all authentication failures on GET /api/v1/dashboard, constituting a new error-response contract surface.
-3. AuthMiddleware is applied as a new contract-enforcing gate on GET /api/v1/dashboard, adding token-presence, expiry, blacklist, and PostgreSQL session-store-availability checks as observable contract behaviour for callers.
-
-### Affected Touchpoints
-
-| Kind | Method | Path | Service | Notes |
-|------|--------|------|---------|-------|
-| api_contract | GET | /api/v1/dashboard | SVC-002 | New endpoint; DashboardResponse 200, ErrorResponse 401; AuthMiddleware; SLA 1000 ms / 500 VUs |
-| api_contract | POST | /api/auth/logout | SVC-002 | TokenBlacklist must be populated on logout completion (dependency for US-001-ac-4) |
-| data_contract | — | DashboardResponse | SVC-002 | delete_account_visible MUST be boolean true in every HTTP 200 |
-| data_contract | — | UserDTO | SVC-002 | Derived exclusively from JwtPayload.sub via req.user |
-| data_contract | — | JwtPayload | SVC-002 | Attached to req.user by AuthMiddleware; sole identity source |
-| data_contract | — | ErrorResponse | SVC-002 | code MUST equal 'UNAUTHORIZED' for all auth failures |
+**Contract change reason**: Greenfield grounding identifies two net-new API endpoints on SVC-001 that are required by US-001: GET /api/dashboard (session-gated dashboard data retrieval, returning DashboardResponseDTO) and DELETE /api/users/me (alias DELETE /api/account, authenticated account deletion), both protected by AuthMiddleware — these endpoints constitute new API contract surface that must be formally defined.
 
 ---
 
 ## Security Obligations
 
 - Validate credential and personal-data handling against the story's acceptance criteria.
-- AuthMiddleware must never grant access when the PostgreSQL session store is unavailable (fail-secure, HTTP 401).
-- User identity must be derived exclusively from the server-set JwtPayload on req.user; client-supplied query parameters and request body fields must never be used as identity sources.
-- Blacklisted tokens (post-logout, post-deletion) must be rejected before the controller is invoked.
+- AuthMiddleware must call `AuthService.validateToken()` and `TokenBlacklist.isBlacklisted()` on every request to GET /api/dashboard.
+- HTTP 401 responses must not contain stack traces, PII, or credential data (enforced by GlobalExceptionHandler).
+- UserController.deleteAccount() must derive target account exclusively from `req.user.userId` (JWT payload), never from client-supplied identifiers.
+- All session tokens (JWT in HttpOnly cookie or Authorization header) must be transmitted exclusively over TLS-encrypted channels (enforced by COMP-012 Nginx).
 
 ## Quality Attribute Obligations
 
-- Verify the changed user flow against the stated accessibility criteria.
-- Session validation on GET /api/v1/dashboard must complete within 1-second end-to-end SLA under ~500 concurrent users (US-001-ac-7); validate with a load test gate (k6 or Artillery) before merge.
+- Verify the changed user flow against the stated accessibility criteria (US-001-ac-5: ARIA roles, labels, focus management per ums-design-system and Dashboard UI wireframe).
+- TokenBlacklist storage backend choice (Redis vs. PostgreSQL sessions table) must be decided before infrastructure provisioning, as it affects latency of `isBlacklisted()` checks on every GET /api/dashboard request.
 
 ---
 
 ## Verification Plan
 
-| Obligation ID | Criterion | Type | Environment | Required Before |
-|---------------|-----------|------|-------------|----------------|
-| abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-1 | US-001-ac-1 | acceptance | ci | release |
-| abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-2 | US-001-ac-2 | acceptance | ci | release |
-| abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-3 | US-001-ac-3 | acceptance | ci | release |
-| abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-4 | US-001-ac-4 | acceptance | ci | release |
-| abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-5 | US-001-ac-5 | acceptance | ci | release |
-| abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-6 | US-001-ac-6 | acceptance | ci | release |
-| abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-7 | US-001-ac-7 | acceptance | ci | release |
-| abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-8 | US-001-ac-8 | acceptance | ci | release |
+| Obligation ID | Criterion | Test Type | Required Before | Environment |
+|---------------|-----------|-----------|-----------------|-------------|
+| 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-1 | The /dashboard route (owned by the ums-web module) must render a 'Delete Account' entry point that is visible and interactable when the user holds a valid active session, consistent with the approved Dashboard UI wireframe. | acceptance | release | ci |
+| 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-2 | The ums-web module must invoke GET /api/dashboard to retrieve dashboard data; the 'Delete Account' option must only be rendered when this call returns a successful, authenticated response. | acceptance | release | ci |
+| 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-3 | When a user navigates to /dashboard without an active session (not logged in), the ums-web router must redirect the user to /login and must not render the 'Delete Account' entry point at any point during the redirect flow. | acceptance | release | ci |
+| 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-4 | When a user's session has expired and they access /dashboard, the ums-web module must detect the expired session (e.g., via a 401 response from GET /api/dashboard), redirect the user to /login for re-authentication, and suppress rendering of the 'Delete Account' entry point. | acceptance | release | ci |
+| 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-5 | The 'Delete Account' entry point rendered on /dashboard must be implemented using ums-design-system components and must visually conform to the approved Dashboard UI wireframe, including correct placement, labeling, and accessibility attributes. | acceptance | release | ci |
+| 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-6 | The DELETE /api/users/me endpoint is listed as a consumed API in the ums-web module; the 'Delete Account' entry point on /dashboard must be wired to initiate this flow, ensuring the UI element is both visible and actionable for authenticated users. | acceptance | release | ci |
 
-### Assertion Details
-
-- **US-001-ac-1**: When GET /api/v1/dashboard is called with a valid, non-expired, non-blacklisted JWT Bearer token, the endpoint must return HTTP 200 with a DashboardResponse body that includes the 'features.delete_account_visible: true' flag, signalling the client to render the Delete Account option.
-- **US-001-ac-2**: When GET /api/v1/dashboard is called without an Authorization header (no active session), the endpoint must return HTTP 401 with an ErrorResponse body containing code 'UNAUTHORIZED', and must not include any dashboard content or the delete_account_visible flag.
-- **US-001-ac-3**: When GET /api/v1/dashboard is called with an expired JWT token (exp claim in the past), the AuthMiddleware must reject the request with HTTP 401 before the controller processes it, and must not return any dashboard content.
-- **US-001-ac-4**: When GET /api/v1/dashboard is called with a token that has been invalidated via the TokenBlacklist (e.g., after logout or account deletion), the AuthMiddleware must detect the blacklisted token via TokenBlacklist.isBlacklisted() and return HTTP 401, ensuring the Delete Account option is never served on a revoked session.
-- **US-001-ac-5**: The DashboardResponse schema must include a 'features' object with a boolean field 'delete_account_visible'; this field must be true in every HTTP 200 response from GET /api/v1/dashboard, as its presence is the server-side signal that the authenticated session is valid and the Delete Account entry point should be rendered.
-- **US-001-ac-6**: The UserController.getDashboard() method must derive the user identity exclusively from the JwtPayload attached to req.user by AuthMiddleware — never from any client-supplied query parameter or request body — and must return the UserDTO fields alongside the features flag in the DashboardResponse.
-- **US-001-ac-7**: Session validation performed by AuthMiddleware on GET /api/v1/dashboard must complete within the 1-second SLA under approximately 500 concurrent users, as specified for the dashboard endpoint, so that authenticated users experience no perceptible delay when the Delete Account option is rendered.
-- **US-001-ac-8**: If the PostgreSQL session store is unavailable during JWT validation for GET /api/v1/dashboard, the endpoint must fail securely by returning HTTP 401 rather than granting access, ensuring the Delete Account option is never displayed when session integrity cannot be confirmed.
-
-### Expected Evidence
-
+**Expected evidence required before release:**
 - test result for US-001-ac-1
 - test result for US-001-ac-2
 - test result for US-001-ac-3
 - test result for US-001-ac-4
 - test result for US-001-ac-5
 - test result for US-001-ac-6
-- test result for US-001-ac-7
-- test result for US-001-ac-8
+
+---
+
+## Traceability Matrix
+
+| Criterion ID | Functional Spec Ref | Accepted Impact Hash |
+|--------------|--------------------|-----------------------|
+| US-001-ac-1 | spec_functional | null |
+| US-001-ac-2 | spec_functional | null |
+| US-001-ac-3 | spec_functional | null |
+| US-001-ac-4 | spec_functional | null |
+| US-001-ac-5 | spec_functional | null |
+| US-001-ac-6 | spec_functional | null |
+
+---
+
+## Provenance
+
+- **Policy version**: `ace-spec-format/v1`
+- **Repository**: `https://github.com/XEBIA-ACE/apac_user_management_system`
+- **Base branch**: `main`
+- **Repository baseline commit**: `6224f58d3d3d9ccd8f069f41a73f4220cf88f4b1`
+- **Run ID**: `5df64424-81b7-4a3e-8607-44ff83fe1ba3`
+- **Project ID**: `7e681a6f-20f6-4a19-99bd-09e678ff8493`
+- **Generation mode**: greenfield
+- **Accepted impact hash**: null (degraded mode)
+- **Evidence refs**: service:SVC-001, artifact-SVC-001-c3, artifact-SVC-001-c4

@@ -1,49 +1,69 @@
 # Tasks: US-001 — View Delete Account Option on Dashboard
 
-> ⚠️ **Degraded design notice**: `spec_technical_design` is marked `degraded=true`. The generated_context artifacts for SVC-002 (`artifact-SVC-002-c3`, `artifact-SVC-002-c4`, `artifact-SVC-002-api_spec`) were regenerated but returned empty content. All implementation tasks below are grounded in `spec_service_identification.services[SVC-002]` and the functional specification. Reconcile against provider-confirmed artifacts once available.
+> **Note**: This design is marked degraded (no provider-scanned architecture context; no `accepted_impact_hash`). All component and API surface references are grounded in regenerated C3 (`artifact-SVC-001-c3`) and C4 (`artifact-SVC-001-c4`) artifacts. Resolve implementation-readiness items in plan.md before beginning implementation.
+
+---
 
 ## Implementation Tasks
 
-- [ ] **T001** [FR-001 / US-001-ac-1] Register GET /api/v1/dashboard on the SVC-002 router with AuthMiddleware as the first middleware in the chain. Verify the route path is exactly `/api/v1/dashboard`. Implement UserController.getDashboard() to return HTTP 200 with `DashboardResponse { user: UserDTO, features: { delete_account_visible: true } }` when the session is valid. [evidence: service:SVC-002, FR-001:US-001-ac-1, artifact-SVC-002-c3, artifact-SVC-002-api_spec]
+- [ ] **T001** [FR-001 / US-001-ac-1] Implement session-gated rendering of the 'Delete Account' entry point on the /dashboard route in ums-web: the entry point must be visible and interactable when and only when the user holds a valid active session, in accordance with the approved Dashboard UI wireframe. [Evidence: artifact-SVC-001-c3, artifact-SVC-001-c4, service:SVC-001]
 
-- [ ] **T002** [FR-002 / US-001-ac-2] Implement the missing-token guard in AuthMiddleware: if the Authorization header is absent or does not carry a Bearer token, return HTTP 401 with `ErrorResponse { code: 'UNAUTHORIZED', message: '...', correlationId: '<uuid>' }` without invoking the controller. [evidence: service:SVC-002, FR-002:US-001-ac-2]
+- [ ] **T002** [FR-002 / US-001-ac-2] Implement GET /api/dashboard invocation on /dashboard route load in ums-web: the 'Delete Account' entry point must be rendered if and only if this request returns a successful, authenticated (HTTP 200) response. The entry point must not be rendered on any non-successful or unauthenticated response. [Evidence: artifact-SVC-001-c4, service:SVC-001]
 
-- [ ] **T003** [FR-003 / US-001-ac-3] Implement JWT exp-claim validation in AuthMiddleware: decode the Bearer token and inspect the `exp` claim; if the current time is at or past `exp`, return HTTP 401 `ErrorResponse { code: 'UNAUTHORIZED' }` without invoking the controller. Use `jsonwebtoken.verify()` / `PyJWT.decode()` with clock-skew tolerance ≤ 0. [evidence: service:SVC-002, FR-003:US-001-ac-3]
+- [ ] **T003** [FR-003 / US-001-ac-3] Implement unauthenticated-session redirect in ums-web router: when a user navigates to /dashboard without an active session, immediately redirect to /login. The 'Delete Account' entry point must not be rendered at any point during this redirect flow, including any intermediate rendering states. [Evidence: artifact-SVC-001-c3, artifact-SVC-001-c4]
 
-- [ ] **T004** [FR-004 / US-001-ac-4] Implement or wire the TokenBlacklist component within SVC-002. AuthMiddleware must call `TokenBlacklist.isBlacklisted(token)` after expiry validation; if the token is blacklisted, return HTTP 401 `ErrorResponse { code: 'UNAUTHORIZED' }` without invoking the controller. Ensure the blacklist is populated on POST /api/auth/logout and on DELETE /api/account completion. Resolve the backing store choice (in-process vs. Redis) and capture any new external dependency. [evidence: service:SVC-002, FR-004:US-001-ac-4]
+- [ ] **T004** [FR-004 / US-001-ac-4] Implement expired-session detection and redirect in ums-web: when a 401 response is received from GET /api/dashboard, redirect the user to /login for re-authentication and suppress rendering of the 'Delete Account' entry point throughout the detection and redirect sequence. [Evidence: artifact-SVC-001-c4]
 
-- [ ] **T005** [FR-005 / US-001-ac-5] Define and enforce the DashboardResponse schema: `{ user: UserDTO, features: { delete_account_visible: boolean } }`. Validate with Zod/Joi (Node.js) or Pydantic (Python) at the controller output boundary. Ensure `delete_account_visible` is always set to boolean `true` in every HTTP 200 response from GET /api/v1/dashboard. [evidence: service:SVC-002, FR-005:US-001-ac-5]
+- [ ] **T005** [FR-005 / US-001-ac-5] Implement the 'Delete Account' entry point on /dashboard using exclusively ums-design-system components. Placement, labeling, and accessibility attributes (ARIA roles, labels, focus management) must conform to the approved Dashboard UI wireframe. Any deviation in placement, labeling, or accessibility attributes constitutes a failure of this requirement. [Evidence: artifact-SVC-001-c3; frontend-scoped design required — EXT-004 is outside SVC-001 scope]
 
-- [ ] **T006** [FR-006 / US-001-ac-6] Implement UserController.getDashboard() to read user identity exclusively from `req.user` (JwtPayload set by AuthMiddleware). It must never read user identity from query parameters or request body. Fetch UserDTO fields (`id`, `name`, `email`, `is_verified`, `created_at`) for the user identified by `JwtPayload.sub`. Return HTTP 200 with `DashboardResponse { user: UserDTO, features: { delete_account_visible: true } }`. [evidence: service:SVC-002, FR-006:US-001-ac-6]
+- [ ] **T006** [FR-006 / US-001-ac-6] Wire the 'Delete Account' entry point on /dashboard to initiate the DELETE /api/users/me flow. List DELETE /api/users/me as a consumed API in the ums-web module. For authenticated users, the entry point must be both visible and actionable. The actual execution of the deletion call, ownership verification, and confirmation step are out of scope for this story. [Evidence: artifact-SVC-001-c4, service:SVC-001]
 
-- [ ] **T007** [FR-007 / US-001-ac-7] Instrument the AuthMiddleware validation path for GET /api/v1/dashboard with timing metrics. Apply connection pooling on the PostgreSQL session store client and set appropriate query timeouts. Add a load test gate (e.g., k6 or Artillery) targeting 500 VUs on GET /api/v1/dashboard to validate the 1-second end-to-end SLA before merge. [evidence: service:SVC-002, FR-007:US-001-ac-7]
+---
 
-- [ ] **T008** [FR-008 / US-001-ac-8] Implement the fail-secure path in AuthMiddleware for PostgreSQL session store unavailability: if the session store query throws or times out during JWT validation, catch the error and return HTTP 401 `ErrorResponse { code: 'UNAUTHORIZED' }` rather than granting access. Log the store outage with a correlation ID. Define and document the concrete query timeout threshold. [evidence: service:SVC-002, FR-008:US-001-ac-8]
+## Backend Contract Confirmation Tasks
 
-- [ ] **T009** Define and enforce the ErrorResponse schema for HTTP 401 responses: `{ code: string, message: string, correlationId: string }`. The `code` field must equal `'UNAUTHORIZED'` for all auth failures on GET /api/v1/dashboard. Wire into the centralized error handler so all AuthMiddleware rejections produce a consistent response body. [evidence: service:SVC-002, FR-002:US-001-ac-2]
+- [ ] **T007** [STEP 1 / FR-001, FR-002] Confirm UserController handles GET /api/dashboard (aliased as GET /api/users/me/dashboard) and the route is registered behind AuthMiddleware in the Express router. Confirm the controller derives user context exclusively from `req.user.userId` (JWT payload), never from client-supplied parameters. [Evidence: artifact-SVC-001-c4, service:SVC-001]
 
-- [ ] **T010** On successful AuthMiddleware validation (token present, not expired, not blacklisted, session store available), decode the JWT and attach `JwtPayload { sub, email, iat, exp }` to `req.user` before calling `next()`. [evidence: service:SVC-002, FR-006:US-001-ac-6]
+- [ ] **T008** [STEP 2 / FR-002, FR-003, FR-004] Verify AuthMiddleware is applied to GET /api/dashboard: (a) extracts Bearer token from Authorization header or HttpOnly cookie, (b) calls `AuthService.validateToken()`, (c) calls `TokenBlacklist.isBlacklisted()`, (d) attaches decoded JwtPayload to `req.user` on success, (e) returns HTTP 401 immediately on any failure. [Evidence: artifact-SVC-001-c4, artifact-SVC-001-c3]
 
-- [ ] **T011** Resolve and document the TokenBlacklist backing store choice (in-process store vs. Redis). If Redis is chosen, capture the new external dependency, its availability contract surface, and update the service dependency list for SVC-002. [evidence: service:SVC-002, open item #3]
+- [ ] **T009** [STEP 3 / FR-001, FR-002] Confirm `UserService.getDashboardData(userId)` retrieves the authenticated user's profile from IUserRepository and constructs `DashboardResponseDTO: { userId, name, email, isVerified, createdAt }`. Confirm UserController maps the result to HTTP 200 OK with the DashboardResponseDTO payload. [Evidence: artifact-SVC-001-c4, artifact-SVC-001-c3]
 
-- [ ] **T012** Define and document the PostgreSQL session store query timeout value used by AuthMiddleware. Confirm the fail-secure path (HTTP 401 on timeout) is triggered at this threshold. [evidence: service:SVC-002, open item #5]
+- [ ] **T010** [STEP 4 / FR-003, FR-004] Confirm GlobalExceptionHandler maps authentication failures (AppError with 401 status) to a standardised ErrorResponseDTO with HTTP 401. Confirm no stack traces, PII, or credential data appear in the 401 response body. [Evidence: artifact-SVC-001-c4]
 
-- [ ] **T013** Reconcile `artifact-SVC-002-c3`, `artifact-SVC-002-c4`, and `artifact-SVC-002-api_spec` once provider-confirmed content is available. Update any component or API surface decisions that diverge from the regenerated artifacts. [evidence: artifact-SVC-002-c3, artifact-SVC-002-c4, artifact-SVC-002-api_spec]
+- [ ] **T011** [STEP 5 / FR-006] Confirm DELETE /api/users/me (registered as DELETE /api/account) is protected by AuthMiddleware and that `UserController.deleteAccount()` passes only `req.user.userId` to `UserService.deleteAccount()`. Confirm endpoint contract is present and wired. [Evidence: artifact-SVC-001-c4, service:SVC-001]
+
+- [ ] **T012** [STEP 6 / FR-001–FR-006] Confirm Nginx (COMP-012) routes GET /api/dashboard and DELETE /api/account through to the REST API Controller Layer (COMP-001) over HTTPS. Confirm no rate-limiting rules block normal authenticated dashboard access. [Evidence: artifact-SVC-001-c3]
+
+- [ ] **T013** [STEP 8 / FR-003, FR-004] Confirm `TokenBlacklist.isBlacklisted()` is invoked by AuthMiddleware on every request to GET /api/dashboard. Confirm tokens revoked via logout or account deletion are immediately rejected. [Evidence: artifact-SVC-001-c4]
+
+---
+
+## Readiness Resolution Tasks
+
+- [ ] **T014** [Readiness Item 1] Resolve canonical path ambiguity: confirm and lock the canonical path for GET /api/dashboard vs GET /api/users/me/dashboard in the API contract and Express router before implementation.
+
+- [ ] **T015** [Readiness Item 2] Resolve canonical path ambiguity: confirm and lock the canonical path for DELETE /api/users/me vs DELETE /api/account; document alias as redirect or remove to prevent dual-route maintenance burden.
+
+- [ ] **T016** [Readiness Item 3] Validate with product owner whether DashboardResponseDTO requires an explicit `canDeleteAccount` boolean flag, or whether deriving 'Delete Account' visibility from a successful 200 response alone is acceptable for all foreseeable business rules.
+
+- [ ] **T017** [Readiness Item 4] Finalise JWT transport mechanism (HttpOnly cookie vs. Authorization Bearer header) for SVC-001 and align ums-web client accordingly before frontend integration, to avoid CORS and CSRF policy mismatches.
+
+- [ ] **T018** [Readiness Item 7] Decide TokenBlacklist storage backend (Redis vs. PostgreSQL sessions table) before infrastructure provisioning; document the decision and its latency implications for `isBlacklisted()` checks on GET /api/dashboard.
+
+- [ ] **T019** [Readiness Item 8] Define and document a rate-limit policy for GET /api/dashboard on COMP-012 (Nginx) if abuse vectors (e.g., credential-stuffing via repeated dashboard polling) are identified as a risk.
+
+---
 
 ## Verification Tasks
 
-- [ ] **T014** [Verify US-001-ac-1 / obligation: abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-1] Write and pass acceptance test: GET /api/v1/dashboard with a valid, non-expired, non-blacklisted JWT Bearer token returns HTTP 200 with `DashboardResponse` body including `features.delete_account_visible: true`.
+- [ ] **T020** [Verify US-001-ac-1 / obligation: 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-1] The /dashboard route (owned by the ums-web module) must render a 'Delete Account' entry point that is visible and interactable when the user holds a valid active session, consistent with the approved Dashboard UI wireframe. _(acceptance test, required before release, environment: ci)_
 
-- [ ] **T015** [Verify US-001-ac-2 / obligation: abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-2] Write and pass acceptance test: GET /api/v1/dashboard without an Authorization header returns HTTP 401 with `ErrorResponse { code: 'UNAUTHORIZED' }`; response must not include any dashboard content or the `delete_account_visible` flag.
+- [ ] **T021** [Verify US-001-ac-2 / obligation: 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-2] The ums-web module must invoke GET /api/dashboard to retrieve dashboard data; the 'Delete Account' option must only be rendered when this call returns a successful, authenticated response. _(acceptance test, required before release, environment: ci)_
 
-- [ ] **T016** [Verify US-001-ac-3 / obligation: abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-3] Write and pass acceptance test: GET /api/v1/dashboard with an expired JWT token (exp claim in the past) returns HTTP 401 from AuthMiddleware before the controller processes it; response must not contain any dashboard content.
+- [ ] **T022** [Verify US-001-ac-3 / obligation: 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-3] When a user navigates to /dashboard without an active session (not logged in), the ums-web router must redirect the user to /login and must not render the 'Delete Account' entry point at any point during the redirect flow. _(acceptance test, required before release, environment: ci)_
 
-- [ ] **T017** [Verify US-001-ac-4 / obligation: abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-4] Write and pass acceptance test: GET /api/v1/dashboard with a blacklisted token (e.g., after logout) causes AuthMiddleware to call `TokenBlacklist.isBlacklisted()` and return HTTP 401; the Delete Account option must not be served.
+- [ ] **T023** [Verify US-001-ac-4 / obligation: 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-4] When a user's session has expired and they access /dashboard, the ums-web module must detect the expired session (e.g., via a 401 response from GET /api/dashboard), redirect the user to /login for re-authentication, and suppress rendering of the 'Delete Account' entry point. _(acceptance test, required before release, environment: ci)_
 
-- [ ] **T018** [Verify US-001-ac-5 / obligation: abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-5] Write and pass acceptance test: every HTTP 200 response from GET /api/v1/dashboard includes a `features` object with `delete_account_visible` set to boolean `true`.
+- [ ] **T024** [Verify US-001-ac-5 / obligation: 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-5] The 'Delete Account' entry point rendered on /dashboard must be implemented using ums-design-system components and must visually conform to the approved Dashboard UI wireframe, including correct placement, labeling, and accessibility attributes. _(acceptance test, required before release, environment: ci)_
 
-- [ ] **T019** [Verify US-001-ac-6 / obligation: abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-6] Write and pass acceptance test: UserController.getDashboard() derives user identity exclusively from `req.user` (JwtPayload); passing a different user ID in query parameters or request body does not affect the identity used; DashboardResponse includes UserDTO fields alongside the features flag.
-
-- [ ] **T020** [Verify US-001-ac-7 / obligation: abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-7] Execute load test (k6 or Artillery) at 500 concurrent VUs against GET /api/v1/dashboard; confirm the full session-validation path completes within 1-second end-to-end SLA. Gate merge on passing result.
-
-- [ ] **T021** [Verify US-001-ac-8 / obligation: abcced4f-1b15-4aab-8725-f0adf10b291b:test:acceptance:US-001-ac-8] Write and pass acceptance test: when the PostgreSQL session store is unavailable during JWT validation, GET /api/v1/dashboard returns HTTP 401 rather than granting access; the Delete Account option must not be displayed.
+- [ ] **T025** [Verify US-001-ac-6 / obligation: 5df64424-81b7-4a3e-8607-44ff83fe1ba3:test:acceptance:US-001-ac-6] The DELETE /api/users/me endpoint is listed as a consumed API in the ums-web module; the 'Delete Account' entry point on /dashboard must be wired to initiate this flow, ensuring the UI element is both visible and actionable for authenticated users. _(acceptance test, required before release, environment: ci)_
