@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: User Management System API (SVC-001)
+  version: 1.0.0
+  description: >
+    Scaffold contract. Only GET /api/v1/health is implemented; every other operation currently
+    returns 501 NOT_IMPLEMENTED (protected operations return 401 until a valid bearer token is
+    supplied).
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code: { type: string, example: UNAUTHORIZED }
+            message: { type: string }
+            request_id: { type: string }
+    HealthResponse:
+      type: object
+      required: [status, timestamp, dependencies]
+      properties:
+        status: { type: string, enum: [healthy, degraded, unhealthy] }
+        timestamp: { type: string, format: date-time }
+        dependencies:
+          type: object
+          required: [database]
+          properties:
+            database: { type: string, example: up }
+            smtp: { type: string }
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+    VerifyOtpRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email: { type: string, format: email }
+        code: { type: string, pattern: '^\d{6}$' }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+  responses:
+    NotImplemented:
+      description: Not implemented yet (scaffold)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Missing, expired, tampered or revoked token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+paths:
+  /auth/register:
+    post:
+      operationId: EP-API-001
+      summary: Register a new user (PENDING) and dispatch an OTP email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '501': { $ref: '#/components/responses/NotImplemented' }
+  /auth/verify-otp:
+    post:
+      operationId: EP-API-002
+      summary: Verify the emailed OTP and activate the account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerifyOtpRequest' }
+      responses:
+        '501': { $ref: '#/components/responses/NotImplemented' }
+  /auth/login:
+    post:
+      operationId: EP-API-003
+      summary: Authenticate and receive a JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '501': { $ref: '#/components/responses/NotImplemented' }
+  /auth/logout:
+    post:
+      operationId: EP-API-004
+      summary: Revoke the current session token
+      security: [{ bearerAuth: [] }]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '501': { $ref: '#/components/responses/NotImplemented' }
+  /dashboard:
+    get:
+      operationId: EP-API-005
+      summary: Authenticated user's dashboard profile
+      security: [{ bearerAuth: [] }]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '501': { $ref: '#/components/responses/NotImplemented' }
+  /users/me:
+    delete:
+      operationId: EP-API-006
+      summary: Permanently delete the authenticated user's account (target derived from JWT only)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '501': { $ref: '#/components/responses/NotImplemented' }
+  /health:
+    get:
+      operationId: EP-API-007
+      summary: Application and PostgreSQL health
+      responses:
+        '200':
+          description: All dependencies reachable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
+        '503':
+          description: A dependency is unreachable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
