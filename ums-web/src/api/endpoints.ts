@@ -26,5 +26,6 @@ export const umsApi = {
   login: (body: LoginRequest) => getApiClient().post('/api/auth/login', body),
   logout: () => getApiClient().post('/api/auth/logout'),
   getDashboard: () => getApiClient().get('/api/dashboard'),
+  getProfile: () => getApiClient().get('/api/users/me'),
   deleteAccount: () => getApiClient().delete('/api/users/me'),
 };

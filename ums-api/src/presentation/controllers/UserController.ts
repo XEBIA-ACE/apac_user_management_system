@@ -2,8 +2,8 @@ import type { Request, Response } from 'express';
 import type { AuthService } from '../../application/AuthService';
 import type { UserService } from '../../application/UserService';
 import { AppError } from '../../domain/AppError';
-import type { DashboardResponse } from '../../domain/dtos';
-import { dashboardResponseSchema } from '../schemas';
+import type { DashboardResponse, ProfileResponse } from '../../domain/dtos';
+import { dashboardResponseSchema, profileResponseSchema } from '../schemas';
 
 // Thin HTTP adapter: depends on services only, never repositories (PAT-002).
 export class UserController {
@@ -24,6 +24,24 @@ export class UserController {
     const user = await this.userService.getDashboardUser(req.user.sub);
     const body: DashboardResponse = { user, features: { delete_account_visible: true } };
     const { error, value } = dashboardResponseSchema.validate(body, { stripUnknown: true });
+    if (error) {
+      throw AppError.internal();
+    }
+    res.status(200).json(value);
+  };
+
+  /**
+   * GET /api/v1/users/me (US-005). Read-only: identity comes only from req.user.sub, so a user can
+   * never read another user's record. Fields come from the users table columns name, email,
+   * created_at (registration date) and status (account status).
+   */
+  getProfile = async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      throw AppError.unauthorized();
+    }
+    const user = await this.userService.getDashboardUser(req.user.sub);
+    const body: ProfileResponse = { user };
+    const { error, value } = profileResponseSchema.validate(body, { stripUnknown: true });
     if (error) {
       throw AppError.internal();
     }

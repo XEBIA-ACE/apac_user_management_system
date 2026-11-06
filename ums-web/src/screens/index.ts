@@ -3,6 +3,7 @@ export { OtpVerificationScreen } from './OtpVerificationScreen';
 export { OtpVerificationSuccessScreen } from './OtpVerificationSuccessScreen';
 export { LoginScreen } from './LoginScreen';
 export { DashboardScreen } from './DashboardScreen';
+export { ProfileScreen } from './ProfileScreen';
 export { AccountDeletionConfirmationScreen } from './AccountDeletionConfirmationScreen';
 export { PostDeletionConfirmationScreen } from './PostDeletionConfirmationScreen';
 export { OtpRecoveryHubScreen } from './OtpRecoveryHubScreen';

@@ -44,6 +44,13 @@ export function createApiRouter(deps: RouteDependencies): Router {
     validationMiddleware.validateAuthenticatedRequest,
     userController.getDashboard,
   );
+  // EP-API-008 — GET /api/v1/users/me (US-005, read-only; no POST/PUT/PATCH is registered)
+  router.get(
+    '/users/me',
+    authMiddleware.validate,
+    validationMiddleware.validateAuthenticatedRequest,
+    userController.getProfile,
+  );
   // EP-API-006
   router.delete(
     '/users/me',

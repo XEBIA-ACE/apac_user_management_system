@@ -7,6 +7,7 @@ export const userDtoSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().required(),
   is_verified: Joi.boolean().strict().required(),
+  account_status: Joi.string().required(),
   created_at: Joi.string().isoDate().required(),
 });
 
@@ -16,6 +17,8 @@ export const dashboardResponseSchema = Joi.object({
     delete_account_visible: Joi.boolean().strict().valid(true).required(),
   }).required(),
 });
+
+export const profileResponseSchema = Joi.object({ user: userDtoSchema.required() });
 
 export const errorResponseSchema = Joi.object({
   code: Joi.string().required(),
