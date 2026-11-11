@@ -1,0 +1,57 @@
+{
+  "story_id": "a9364419-c381-54f0-93da-2b9e5006188c",
+  "title": "Rewrite Modernisation Objective to Match Confirmed Technology Stack",
+  "spec_run_id": "fd869c32-766f-5900-812d-d1e546a3a55b",
+  "spec_bundle_id": "0bdffb07-b542-4aeb-aae9-ae9eb05773a1",
+  "upgrade_option": "OPT-SCOPE-CLARIFY",
+  "accepted_impact_hash": "sha256:3cde12d354b52c01f0a0545583f984f45067017a18ed7cfa633a25bb4d4d7580",
+  "grounding_snapshot": "60b54710194b777d",
+  "repository": {
+    "url": "https://github.com/XEBIA-ACE/apac_user_management_system",
+    "ref": "main",
+    "commit": "810fe751f082b675b4b572e9d05c965676508a6e"
+  },
+  "gate": {
+    "status": "blocked",
+    "blocked_at_task": "T001",
+    "record": "s1-gate-record.md"
+  },
+  "s1": {
+    "story_id": "66c13290-8591-5dce-968e-98f706f6a88e",
+    "outcome_available": false,
+    "stack_identity_confirmed": null,
+    "separate_java_service_exists": null,
+    "confirmed_by": null,
+    "confirmed_on": null,
+    "decision_log_ref": null
+  },
+  "objective_branch": null,
+  "revised_objective": {
+    "status": "not_started",
+    "path": null
+  },
+  "risk_register": {
+    "path": "open-risk-register.md"
+  },
+  "signoff": {
+    "status": "not_obtained",
+    "record": "signoff-record.md",
+    "approver_name": null,
+    "approver_role": null,
+    "approved_on": null,
+    "evidence_ref": null
+  },
+  "publication": {
+    "status": "not_published",
+    "authoritative_artefact_ref": null,
+    "superseded_objective_handling": null
+  },
+  "obligation_ids": {
+    "S2-AC1": "fd869c32-766f-5900-812d-d1e546a3a55b:test:characterization:S2-AC1",
+    "S2-AC2": "fd869c32-766f-5900-812d-d1e546a3a55b:test:characterization:S2-AC2",
+    "S2-AC3": "fd869c32-766f-5900-812d-d1e546a3a55b:test:characterization:S2-AC3",
+    "S2-AC4": "fd869c32-766f-5900-812d-d1e546a3a55b:test:characterization:S2-AC4",
+    "S2-AC5": "fd869c32-766f-5900-812d-d1e546a3a55b:test:characterization:S2-AC5",
+    "S2-AC6": "fd869c32-766f-5900-812d-d1e546a3a55b:test:characterization:S2-AC6"
+  }
+}
