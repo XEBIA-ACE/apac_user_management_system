@@ -1,0 +1,67 @@
+# Feature Specification: a9364419-c381-54f0-93da-2b9e5006188c
+
+## Story
+**Title:** Rewrite Modernisation Objective to Match Confirmed Technology Stack
+**Story ID:** a9364419-c381-54f0-93da-2b9e5006188c
+
+**Description:**
+The current project charter declares a modernisation objective of upgrading to Spring Boot 3.x and Java 17/21. The scanned repository (User_Management, 20,063 LOC) is a Node.js/TypeScript backend using Express 4.19.2, better-sqlite3, ioredis, and bcrypt — with no Java, Maven, Spring Boot, JPA, or Hibernate evidence anywhere in the snapshot (F77, F47, F43). This mismatch means every planning decision made against the stated objective is inapplicable to the actual codebase. This story takes the confirmed output of S1 (repository identity and whether a separate Java service exists) and uses it to formally rewrite the modernisation objective in the project charter so that it targets the confirmed technology stack. If S1 confirms the scanned Node.js/TypeScript service is the correct target, the objective is rewritten to address the real upgrade targets: Express 4.x → 5.x, yamljs → js-yaml, cors replacement, SQLite → PostgreSQL (if scaling is required), containerisation, and CI/CD. If S1 confirms a separate Java/Spring Boot service exists, the objective is updated to reference that service explicitly and the Node.js service is scoped separately. Until S1 is resolved, this story must not begin. Note: the evidence snapshot may be stale and is not verified against a repository commit; these are accepted limitations and must be acknowledged in the updated charter.
+
+## User Scenarios & Acceptance Criteria
+- **S2-AC1**: Given S1 has been completed and its outcome is available, when this story begins, then the S1 outcome (confirmed stack identity and whether a Java service exists) is documented as the input basis for the revised objective.
+- **S2-AC2**: Given the S1 outcome confirms the Node.js/TypeScript service is the correct and sole target, when the revised objective is written, then it names Node.js/TypeScript as the target runtime, references Express 4.x and the other confirmed dependencies (better-sqlite3, ioredis, yamljs, cors) as the upgrade surface, and contains no reference to Spring Boot 3.x or Java 17/21.
+- **S2-AC3**: Given the S1 outcome confirms a separate Java/Spring Boot service exists, when the revised objective is written, then it explicitly names that Java service as the Spring Boot upgrade target and scopes the Node.js/TypeScript service separately, so the two are not conflated.
+- **S2-AC4**: Given the revised objective has been drafted, when it is presented for approval, then a named project sponsor or product owner has reviewed and signed off on it in writing (email, Confluence comment, Jira approval, or equivalent).
+- **S2-AC5**: Given the accepted evidence limitations (stale analysis, no commit verification, no migration evidence), when the revised objective is finalised, then those limitations are recorded as open risks in or alongside the updated charter, not treated as evidence of absence.
+- **S2-AC6**: Given the revised objective is approved, when it is stored, then it is accessible in the project's authoritative planning artefact (e.g. Confluence page, Jira epic description, or project charter document) and the old Spring Boot/Java 17-21 objective is either removed or explicitly superseded.
+
+## Functional Requirements
+- **FR-001 [S2-AC1]**: The story must not begin until S1 has been completed and its outcome is available. The S1 outcome — comprising the confirmed stack identity of the scanned repository and a definitive answer on whether a separate Java service exists — must be recorded in writing as the documented input basis for the revised modernisation objective before any drafting work commences.
+- **FR-002 [S2-AC2]**: When the S1 outcome confirms that the Node.js/TypeScript service (User_Management) is the correct and sole modernisation target, the revised objective statement must: (a) name Node.js/TypeScript as the target runtime; (b) explicitly reference Express 4.x, better-sqlite3, ioredis, yamljs, and cors as the upgrade surface; and (c) contain no reference to Spring Boot 3.x or Java 17/21.
+- **FR-003 [S2-AC3]**: When the S1 outcome confirms that a separate Java/Spring Boot service exists, the revised objective statement must: (a) explicitly name that Java service as the Spring Boot upgrade target; and (b) scope the Node.js/TypeScript service separately from the Java service, such that the two are not conflated in any planning artefact.
+- **FR-004 [S2-AC4]**: Before the revised objective is finalised, it must be presented to a named project sponsor or product owner for review. Sign-off must be recorded in a durable, attributable written form — such as an email, a Confluence comment, a Jira approval, or an equivalent channel — and the name of the approver and the date of sign-off must be identifiable from that record.
+- **FR-005 [S2-AC5]**: The finalised revised objective must be accompanied by an open-risk record that explicitly lists the three accepted evidence limitations: (a) the analysis snapshot may be stale; (b) no commit verification was performed; and (c) no migration evidence is present. These limitations must be recorded as open risks in or alongside the updated charter and must not be characterised as evidence of absence.
+- **FR-006 [S2-AC6]**: Once approved, the revised objective must be stored in the project's authoritative planning artefact (e.g. Confluence page, Jira epic description, or project charter document) such that: (a) the revised objective is directly accessible to all project stakeholders; and (b) the superseded Spring Boot/Java 17-21 objective is either removed from that artefact or explicitly marked as superseded, leaving no ambiguity about which objective is current.
+
+## Success Criteria
+- **S2-AC1**: Given S1 has been completed and its outcome is available, when this story begins, then the S1 outcome (confirmed stack identity and whether a Java service exists) is documented as the input basis for the revised objective.
+- **S2-AC2**: Given the S1 outcome confirms the Node.js/TypeScript service is the correct and sole target, when the revised objective is written, then it names Node.js/TypeScript as the target runtime, references Express 4.x and the other confirmed dependencies (better-sqlite3, ioredis, yamljs, cors) as the upgrade surface, and contains no reference to Spring Boot 3.x or Java 17/21.
+- **S2-AC3**: Given the S1 outcome confirms a separate Java/Spring Boot service exists, when the revised objective is written, then it explicitly names that Java service as the Spring Boot upgrade target and scopes the Node.js/TypeScript service separately, so the two are not conflated.
+- **S2-AC4**: Given the revised objective has been drafted, when it is presented for approval, then a named project sponsor or product owner has reviewed and signed off on it in writing (email, Confluence comment, Jira approval, or equivalent).
+- **S2-AC5**: Given the accepted evidence limitations (stale analysis, no commit verification, no migration evidence), when the revised objective is finalised, then those limitations are recorded as open risks in or alongside the updated charter, not treated as evidence of absence.
+- **S2-AC6**: Given the revised objective is approved, when it is stored, then it is accessible in the project's authoritative planning artefact (e.g. Confluence page, Jira epic description, or project charter document) and the old Spring Boot/Java 17-21 objective is either removed or explicitly superseded.
+- **IMPACT**: Verify acceptance criterion: Given S1 has been completed and its outcome is available, when this story begins, then the S1 outcome (confirmed stack identity and whether a Java service exists) is documented as the input basis for the revised objective.
+- **IMPACT**: Verify acceptance criterion: Given the S1 outcome confirms the Node.js/TypeScript service is the correct and sole target, when the revised objective is written, then it names Node.js/TypeScript as the target runtime, references Express 4.x and the other confirmed dependencies (better-sqlite3, ioredis, yamljs, cors) as the upgrade surface, and contains no reference to Spring Boot 3.x or Java 17/21.
+- **IMPACT**: Verify acceptance criterion: Given the S1 outcome confirms a separate Java/Spring Boot service exists, when the revised objective is written, then it explicitly names that Java service as the Spring Boot upgrade target and scopes the Node.js/TypeScript service separately, so the two are not conflated.
+- **IMPACT**: Verify acceptance criterion: Given the revised objective has been drafted, when it is presented for approval, then a named project sponsor or product owner has reviewed and signed off on it in writing (email, Confluence comment, Jira approval, or equivalent).
+- **IMPACT**: Verify acceptance criterion: Given the accepted evidence limitations (stale analysis, no commit verification, no migration evidence), when the revised objective is finalised, then those limitations are recorded as open risks in or alongside the updated charter, not treated as evidence of absence.
+- **IMPACT**: Verify acceptance criterion: Given the revised objective is approved, when it is stored, then it is accessible in the project's authoritative planning artefact (e.g. Confluence page, Jira epic description, or project charter document) and the old Spring Boot/Java 17-21 objective is either removed or explicitly superseded.
+
+## Evidence Gaps and Disclosures
+- No backend dependency modules (Express, better-sqlite3, ioredis, yamljs, cors, bcrypt) appear in the CAST application-level inventory — only @radix-ui frontend packages are measured. Backend stack confirmation relies on story description references (F77, F47, F43) not directly visible in the provided inventory facts.
+- S1 outcome artefact is not present in the provided facts — cannot confirm whether the Node.js-only or Java-service branch of the acceptance criteria applies.
+- Transaction call graphs returned empty (CAST MCP returned no data), limiting confidence in full transaction scope.
+- API inventory query returned errors ('Invalid arguments for function', 'NoneType' error) — no API endpoint data is available for this object.
+- No database objects were returned for the focus object, consistent with it being a frontend UI component, but backend DB exposure cannot be assessed from this object alone.
+- No named sponsor or product owner is identified in the CAST facts or story metadata.
+- Candidate verification found the selected focus object implausible for this requirement: The requirement is about rewriting a project charter's modernisation objective to match the confirmed Node.js/TypeScript technology stack (Express, SQLite, Redis, etc.), which is a documentation/configuration-level concern with no connection to a frontend UI component. The selected object, `IdentityVerificationCard`, is a React/TypeScript frontend UI component for identity verification display, which has no semantic relationship to charter modernisation objectives, technology stack declarations, or any of the upgrade targets mentioned (Express 5.x, js-yaml, PostgreSQL, CI/CD). None of the other candidates are a better match either, as they are repository classes for deletion notifications, deletion requests, email records, and OTP requests — all unrelated to the charter rewrite requirement.
+- Searched 5 term(s) derived from this requirement (projectCharter, modernisationObjective, technologyStack, upgradeTarget, repositoryIdentity) against Cast; none resolved to an existing code object.
+- No-match classification: The requirement describes formally rewriting a project charter's modernisation objective to reflect the confirmed technology stack — a planning/documentation artifact that does not yet exist in any codebase. The searched terms returning nothing is entirely expected, as this is a new governance/documentation deliverable, not an existing code construct.
+- No pre-existing implementation was found for this requirement; scope is derived solely from the requirement text, not from measured code evidence.
+- Architecture context is degraded (missing_core: api_contracts, source: determinism_cast) — no API contract data is available to assess contract impact against the target service.
+- The accepted_impact_hash attests to a degraded impact analysis; the hash confirms acceptance of the degraded state, not a fully grounded analysis. All downstream readiness assessments inherit this degradation.
+
+## Provenance
+- **Policy version**: `ace-spec-format/v1`
+- **Accepted impact analysis revision**: `1`
+- **Accepted impact analysis**: `sha256:3cde12d354b52c01f0a0545583f984f45067017a18ed7cfa633a25bb4d4d7580`
+- **Repository baseline commit**: `810fe751f082b675b4b572e9d05c965676508a6e`
+- **Deterministic grounding reference**: `60b54710194b777d`
+- **Run ID**: `fd869c32-766f-5900-812d-d1e546a3a55b`
+- **Project ID**: `0942c456-f7cd-444c-ba16-446787d2ce8e`
+- **Repository**: `https://github.com/XEBIA-ACE/apac_user_management_system`
+- **Ref**: `main`
+- **Commit**: `810fe751f082b675b4b572e9d05c965676508a6e`
+- **CAST application**: `User_Management`
+- **Modernisation task**: `a9364419-c381-54f0-93da-2b9e5006188c`
+- **Upgrade option**: `OPT-SCOPE-CLARIFY`
